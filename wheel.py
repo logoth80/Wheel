@@ -13,6 +13,7 @@ pygame.display.set_caption("36 Triangles from a Point")
 # Define colors
 black = (0, 0, 0)
 white = (255, 255, 255)
+gold = (255, 170, 20)
 colors = [
     (255, 0, 0),  # Red
     (0, 255, 0),  # Green
@@ -72,15 +73,15 @@ while running:
             )
 
             pygame.draw.circle(screen, black, (center_x, center_y), radius=line_length + 2, width=4)
+            pygame.draw.circle(screen, gold, (center_x, center_y), radius=line_length, width=3)
 
             # Calculate text position for each triangle
             text_angle = current_angle + angle_step / 2
-            word_len = texts[i % len(texts)]
-            t1_x = center_x + (line_length - 20 - 5 * len(texts[i % len(texts)])) * math.cos(math.radians(text_angle))  # Adjusted distance
-            t1_y = center_y - (line_length - 20 - 5 * len(texts[i % len(texts)])) * math.sin(math.radians(text_angle))
-
             # Render text into a surface
             text_surface = font.render(texts[i % len(texts)], True, black)
+            offset = int(0.5 * text_surface.get_width()) + 20
+            t1_x = center_x + ((line_length - offset) * math.cos(math.radians(text_angle)))  # Adjusted distance
+            t1_y = center_y - ((line_length - offset) * math.sin(math.radians(text_angle)))
 
             # Rotate the text surface
             rotated_text_surface = pygame.transform.rotate(text_surface, text_angle)
