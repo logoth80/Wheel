@@ -34,11 +34,18 @@ pies = 24
 angle_step = 360 / pies
 current_degree = 0
 rotation_tick = 0.004
-rotation_step = 0.3
+rotation_step = 0
 last_tick_time = time.time()
 
 # Set up the font
 font = pygame.font.Font(None, 24)  # None uses the default system font
+
+added_power = 0
+
+
+def roll_wheel(power_added):
+    global rotation_step
+    rotation_step = power_added / 100
 
 
 # Main game loop
@@ -47,6 +54,30 @@ while running:
     for event in pygame.event.get():
         if event.type == pygame.QUIT:
             running = False
+        elif event.type == pygame.KEYUP:
+            key = pygame.key.name(event.key).lower()
+            if event.key == pygame.K_ESCAPE:
+                restarting_loop = False
+                running = False
+            if event.key == pygame.K_F5:
+                print("restart")
+            if event.key == pygame.K_SPACE:
+                print("release ", added_power)
+                if added_power > 0:
+                    roll_wheel(added_power)
+                    added_power = 0
+        elif event.type == pygame.K_DOWN:
+            key = pygame.key.name(event.key).lower()
+            if event.key == pygame.K_SPACE:
+                print("powering up ")
+                added_power = min(added_power, 100)
+        else:
+            keys = pygame.key.get_pressed()
+            if keys[pygame.K_SPACE]:
+                added_power += 5
+                added_power = max(added_power, 25)
+                added_power = min(120, added_power)
+                print(added_power)
 
     screen.fill(black)
 
@@ -98,8 +129,19 @@ while running:
     pygame.display.flip()
     if time.time() > last_tick_time + rotation_tick:
         current_degree -= rotation_step
+        if rotation_step < 0.02:
+            rotation_step = 0
+        elif rotation_step < 0.08:
+            rotation_step = rotation_step * 0.997
+        elif rotation_step < 0.2:
+            rotation_step = rotation_step * 0.998
+        elif rotation_step < 0.5:
+            rotation_step = rotation_step * 0.999
+        else:
+            rotation_step = rotation_step * 0.9993
         if current_degree <= -360:
             current_degree += 360
+
         last_tick_time = time.time()
 
 
