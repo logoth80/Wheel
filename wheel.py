@@ -11,6 +11,8 @@ width, height = 800, 600
 screen = pygame.display.set_mode((width, height))
 pygame.display.set_caption("the Wheel")
 
+wheel_moving = False
+
 # Define colors
 black = (0, 0, 0)
 white = (255, 255, 255)
@@ -42,23 +44,51 @@ pies = 24
 # Angle between each triangle in degrees
 angle_step = 360 / pies
 current_degree = -1
-rotation_tick = 0.005
+rotation_tick = 0.004
 rotation_step = 0
 last_tick_time = time.time()
 last_rest = 0
 play_sound_step = 360 / (3 * pies)
 next_sound_angle = -play_sound_step
 click_sound = pygame.mixer.Sound("click.mp3")
-print(click_sound.get_volume())
+
 # Set up the font
 font = pygame.font.Font(None, 24)  # None uses the default system font
-
+font2 = pygame.font.SysFont("Georgia", 36)
 added_power = 0
+
+
+def calculate_stop_time(rotation_step_0, rotation_tick):
+    total_time = 0
+    current_step = rotation_step_0
+
+    while current_step >= 0.02:
+        if current_step < 0.08:
+            decay_factor = 0.9965
+        elif current_step < 0.2:
+            decay_factor = 0.9975
+        elif current_step < 0.5:
+            decay_factor = 0.9985
+        else:
+            decay_factor = 0.999
+
+        # Calculate time for this step
+        steps_to_next_threshold = math.ceil(math.log(0.02 / current_step) / math.log(decay_factor))
+        total_time += steps_to_next_threshold * rotation_tick
+        current_step *= decay_factor**steps_to_next_threshold  # Decay to threshold
+
+    return total_time
 
 
 def roll_wheel(power_added):
     global rotation_step
     rotation_step = power_added / 100
+    if power_added > 0:
+        global wheel_moving
+        wheel_moving = True
+
+    time_to_stop = calculate_stop_time(rotation_step, rotation_tick)
+    print(f"Time to stop: {time_to_stop:.2f} seconds")
 
 
 def sound_click():
@@ -168,6 +198,20 @@ while running:
             gfxdraw.aacircle(screen, x1, y1, 3, (60, 60, 60))
             pygame.draw.circle(screen, silver, (x1, y1), 3)
 
+    def current_result():
+        current_index = int(((-90 - current_degree) % 360) / (360 / pies))
+        # print(texts[(current_index % len(texts))])
+        return current_index % len(texts)
+
+    if rotation_step == 0:
+        index = current_result()
+        text_surface = font2.render(texts[index], 100, (50, 40, 40))
+        text_width = text_surface.get_width()
+        text_height = text_surface.get_height()
+        pygame.draw.rect(screen, (20, 20, 20), pygame.Rect(245 - text_width, 25, text_width + 30, text_height + 30))
+        pygame.draw.rect(screen, (20, 160, 20), pygame.Rect(250 - text_width, 30, text_width + 20, text_height + 20))
+        screen.blit(text_surface, (260 - text_width, 36))
+
     draw_wheel(current_degree)
     draw_power(added_power)
 
@@ -180,28 +224,35 @@ while running:
 
     # Update the display
     pygame.display.flip()
-    if time.time() > last_tick_time + rotation_tick:
-        last_tick_time = time.time()
-        current_degree -= rotation_step
 
-        if rotation_step < 0.02:
-            rotation_step = 0
-        elif rotation_step < 0.08:
-            rotation_step = rotation_step * 0.997
-        elif rotation_step < 0.2:
-            rotation_step = rotation_step * 0.998
-        elif rotation_step < 0.5:
-            rotation_step = rotation_step * 0.999
-        else:
-            rotation_step = rotation_step * 0.9993
+    def turn_wheel():
+        global last_tick_time, current_degree, next_sound_angle, rotation_step
 
-        print(f"c: {int(current_degree)}, n: {int(next_sound_angle)}")
-        if current_degree < next_sound_angle:
-            sound_click()
-            next_sound_angle -= play_sound_step
+        if time.time() > last_tick_time + rotation_tick:
+            last_tick_time = time.time()
+            current_degree -= rotation_step
 
-        if current_degree <= -360:
-            current_degree += 360
-            next_sound_angle += 360
+            if rotation_step < 0.02:
+                rotation_step = 0
+            elif rotation_step < 0.08:
+                rotation_step = rotation_step * 0.996
+            elif rotation_step < 0.2:
+                rotation_step = rotation_step * 0.9975
+            elif rotation_step < 0.5:
+                rotation_step = rotation_step * 0.9985
+            else:
+                rotation_step = rotation_step * 0.999
+            if current_degree < next_sound_angle:
+                sound_click()
+                next_sound_angle -= play_sound_step
+                current_result()
+            if current_degree <= -360:
+                current_degree += 360
+                next_sound_angle += 360
+
+    if rotation_step > 0:
+        turn_wheel()
+
+
 # Quit Pygame
 pygame.quit()
