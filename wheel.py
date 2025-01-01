@@ -1,6 +1,7 @@
 import pygame
 import math
 import time
+from pygame import gfxdraw
 
 # Initialize Pygame
 pygame.init()
@@ -8,19 +9,27 @@ pygame.init()
 # Set up the display window
 width, height = 800, 600
 screen = pygame.display.set_mode((width, height))
-pygame.display.set_caption("36 Triangles from a Point")
+pygame.display.set_caption("the Wheel")
 
 # Define colors
 black = (0, 0, 0)
 white = (255, 255, 255)
 gold = (255, 170, 20)
+silver = (140, 140, 140)
+bg_color = (120, 30, 0)
 colors = [
     (255, 0, 0),  # Red
     (0, 255, 0),  # Green
+    (255, 0, 125),
+    (0, 255, 125),
     (0, 0, 255),  # Blue
+    (255, 125, 0),
     (255, 255, 0),  # Yellow
     (0, 255, 255),  # Cyan
+    (0, 125, 255),
     (255, 0, 255),  # Magenta
+    (255, 255, 255),
+    (60, 60, 60),
 ]
 texts = ["BANKRUT", "2500", "200", "300", "500", "WYCIECZKA", "750", "1000", "1500", "Niespodzianka", "100", "5000"]
 
@@ -32,11 +41,15 @@ line_length = 250
 pies = 24
 # Angle between each triangle in degrees
 angle_step = 360 / pies
-current_degree = 0
-rotation_tick = 0.004
+current_degree = -1
+rotation_tick = 0.005
 rotation_step = 0
 last_tick_time = time.time()
-
+last_rest = 0
+play_sound_step = 360 / (3 * pies)
+next_sound_angle = -play_sound_step
+click_sound = pygame.mixer.Sound("click.mp3")
+print(click_sound.get_volume())
 # Set up the font
 font = pygame.font.Font(None, 24)  # None uses the default system font
 
@@ -48,17 +61,29 @@ def roll_wheel(power_added):
     rotation_step = power_added / 100
 
 
+def sound_click():
+    click_sound.set_volume(1 + rotation_step / 3)
+    click_sound.play()
+
+
 def draw_power(power):
     for p in range(int(power)):
-        pygame.draw.rect(screen, (55, 220, 0), pygame.Rect(697, 497 - p * 3, 51, 8))
+        pygame.draw.rect(screen, (25, 200, 0), pygame.Rect(697, 497 - p * 3, 51, 8))
     for p in range(int(power)):
-        pygame.draw.rect(screen, (255, 255 - 2 * p, 0), pygame.Rect(700, 500 - p * 3, 45, 3))
+        pygame.draw.rect(screen, (240, max(0, 240 - 2 * p), 0), pygame.Rect(700, 500 - p * 3, 45, 3))
         # pygame.display.flip()
 
 
+teststart = time.time()
+fpstest = 0
 # Main game loop
 running = True
 while running:
+    fpstest += 1
+    if fpstest % 1000 == 0:
+        print(1000 / (time.time() - teststart), " fps")
+        teststart = time.time()
+
     for event in pygame.event.get():
         if event.type == pygame.QUIT:
             running = False
@@ -88,7 +113,7 @@ while running:
                 draw_power(added_power)
                 print(added_power)
 
-    screen.fill(black)
+    screen.fill(bg_color)
 
     def draw_wheel(degree):
         # Draw pies * triangles
@@ -101,6 +126,7 @@ while running:
             third_vertex_y = center_y - line_length * math.sin(math.radians(current_angle + angle_step))
 
             # Draw and fill the triangle
+            # gfxdraw.aapolygon(screen, [(center_x, center_y), (int(end_x), int(end_y)), (int(third_vertex_x), int(third_vertex_y))], colors[i % len(colors)])
             pygame.draw.polygon(
                 screen,
                 colors[i % len(colors)],
@@ -111,9 +137,12 @@ while running:
                 ],
                 width=0,
             )
+            if rotation_step == 0:
+                gfxdraw.aapolygon(screen, [(center_x, center_y), (int(end_x), int(end_y)), (int(third_vertex_x), int(third_vertex_y))], colors[i % len(colors)])
 
-            pygame.draw.circle(screen, black, (center_x, center_y), radius=line_length + 2, width=4)
-            pygame.draw.circle(screen, gold, (center_x, center_y), radius=line_length, width=3)
+            gfxdraw.aacircle(screen, center_x, center_y, line_length + 1, gold)
+            pygame.draw.circle(screen, gold, (center_x, center_y), radius=line_length + 1, width=7)
+            gfxdraw.aacircle(screen, center_x, center_y, line_length - 6, gold)
 
             # Calculate text position for each triangle
             text_angle = current_angle + angle_step / 2
@@ -132,8 +161,22 @@ while running:
 
             current_angle += angle_step
 
+        for i in range(3 * pies):  # spokes
+            degree_1 = i * (360 / (3 * pies)) + current_degree
+            x1 = int(center_x + (line_length - 2.5) * math.cos(math.radians(degree_1)))
+            y1 = int(center_y - (line_length - 2.5) * math.sin(math.radians(degree_1)))
+            gfxdraw.aacircle(screen, x1, y1, 3, (60, 60, 60))
+            pygame.draw.circle(screen, silver, (x1, y1), 3)
+
     draw_wheel(current_degree)
     draw_power(added_power)
+
+    pygame.draw.polygon(
+        screen,
+        (200, 0, 0),
+        [(center_x, center_y - line_length + 5), (center_x - 5, center_y - line_length - 15), (center_x + 5, center_y - line_length - 15)],
+        0,
+    )
 
     # Update the display
     pygame.display.flip()
@@ -151,6 +194,13 @@ while running:
             rotation_step = rotation_step * 0.9993
         if current_degree <= -360:
             current_degree += 360
+
+        print(f"c: {int(current_degree)}, n: {int(next_sound_angle)}")
+        if current_degree < next_sound_angle:
+            sound_click()
+            next_sound_angle -= play_sound_step
+            if next_sound_angle <= -360:
+                next_sound_angle += 360
 
         last_tick_time = time.time()
 
