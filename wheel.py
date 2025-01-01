@@ -48,6 +48,14 @@ def roll_wheel(power_added):
     rotation_step = power_added / 100
 
 
+def draw_power(power):
+    for p in range(int(power)):
+        pygame.draw.rect(screen, (55, 220, 0), pygame.Rect(697, 497 - p * 3, 51, 8))
+    for p in range(int(power)):
+        pygame.draw.rect(screen, (255, 255 - 2 * p, 0), pygame.Rect(700, 500 - p * 3, 45, 3))
+        # pygame.display.flip()
+
+
 # Main game loop
 running = True
 while running:
@@ -77,6 +85,7 @@ while running:
                 added_power += 5
                 added_power = max(added_power, 25)
                 added_power = min(120, added_power)
+                draw_power(added_power)
                 print(added_power)
 
     screen.fill(black)
@@ -124,6 +133,7 @@ while running:
             current_angle += angle_step
 
     draw_wheel(current_degree)
+    draw_power(added_power)
 
     # Update the display
     pygame.display.flip()
