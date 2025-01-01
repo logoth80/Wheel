@@ -62,7 +62,7 @@ def roll_wheel(power_added):
 
 
 def sound_click():
-    click_sound.set_volume(1 + rotation_step / 3)
+    click_sound.set_volume(0.3 + rotation_step)
     click_sound.play()
 
 
@@ -181,7 +181,9 @@ while running:
     # Update the display
     pygame.display.flip()
     if time.time() > last_tick_time + rotation_tick:
+        last_tick_time = time.time()
         current_degree -= rotation_step
+
         if rotation_step < 0.02:
             rotation_step = 0
         elif rotation_step < 0.08:
@@ -192,18 +194,14 @@ while running:
             rotation_step = rotation_step * 0.999
         else:
             rotation_step = rotation_step * 0.9993
-        if current_degree <= -360:
-            current_degree += 360
 
         print(f"c: {int(current_degree)}, n: {int(next_sound_angle)}")
         if current_degree < next_sound_angle:
             sound_click()
             next_sound_angle -= play_sound_step
-            if next_sound_angle <= -360:
-                next_sound_angle += 360
 
-        last_tick_time = time.time()
-
-
+        if current_degree <= -360:
+            current_degree += 360
+            next_sound_angle += 360
 # Quit Pygame
 pygame.quit()
