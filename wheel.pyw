@@ -2,6 +2,7 @@ import pygame
 import math
 import time
 from pygame import gfxdraw
+import random
 
 # Initialize Pygame
 pygame.init()
@@ -81,13 +82,14 @@ def calculate_stop_time(rotation_step_0, rotation_tick):
 
 def roll_wheel(power_added):
     global rotation_step
+    power_added = power_added - 40 + random.random() * power_added / 2.5
     rotation_step = power_added / 100
     if power_added > 0:
         global wheel_moving
         wheel_moving = True
 
     time_to_stop = calculate_stop_time(rotation_step, rotation_tick)
-    print(f"Time to stop: {time_to_stop:.2f} seconds")
+    print(f"Speed: {power_added}. Time to stop: {time_to_stop:.2f} seconds")
 
 
 def sound_click():
@@ -143,7 +145,7 @@ while running:
                 added_power = max(added_power, 25)
                 added_power = min(120, added_power)
                 draw_power(added_power)
-                print(added_power)
+                # print(added_power)
 
     screen.fill(bg_color)
 
@@ -228,7 +230,7 @@ while running:
     pygame.display.flip()
 
     def turn_wheel():
-        global last_tick_time, current_degree, next_sound_angle, rotation_step
+        global last_tick_time, current_degree, next_sound_angle, rotation_step, wheel_moving
 
         if time.time() > last_tick_time + rotation_tick:
             last_tick_time = time.time()
@@ -236,6 +238,7 @@ while running:
 
             if rotation_step < 0.02:
                 rotation_step = 0
+                wheel_moving = False
             elif rotation_step < 0.08:
                 rotation_step = rotation_step * 0.996
             elif rotation_step < 0.2:
