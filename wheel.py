@@ -6,8 +6,9 @@ from pygame import gfxdraw
 # Initialize Pygame
 pygame.init()
 
+line_length = 250
 # Set up the display window
-width, height = 800, 600
+width, height = 2 * line_length + 300, 2 * line_length + 100
 screen = pygame.display.set_mode((width, height))
 pygame.display.set_caption("the Wheel")
 
@@ -38,8 +39,6 @@ texts = ["BANKRUT", "2500", "200", "300", "500", "WYCIECZKA", "750", "1000", "15
 # Starting point of the triangles
 center_x, center_y = width // 2, height // 2
 
-# Length of each line
-line_length = 250
 pies = 24
 # Angle between each triangle in degrees
 angle_step = 360 / pies
@@ -53,7 +52,7 @@ next_sound_angle = -play_sound_step
 click_sound = pygame.mixer.Sound("click.mp3")
 
 # Set up the font
-font = pygame.font.Font(None, 24)  # None uses the default system font
+font = pygame.font.SysFont("Book Antiqua", int(24 * line_length / 280))  # None uses the default system font
 font2 = pygame.font.SysFont("Georgia", 36)
 added_power = 0
 
@@ -98,10 +97,13 @@ def sound_click():
 
 def draw_power(power):
     for p in range(int(power)):
-        pygame.draw.rect(screen, (25, 200, 0), pygame.Rect(697, 497 - p * 3, 51, 8))
+        pygame.draw.rect(screen, (25, 200, 0), pygame.Rect(2 * line_length + 200, 2 * line_length - p * int(line_length / 101 + 1) - 6, 51, 8))
     for p in range(int(power)):
-        pygame.draw.rect(screen, (240, max(0, 240 - 2 * p), 0), pygame.Rect(700, 500 - p * 3, 45, 3))
-        # pygame.display.flip()
+        pygame.draw.rect(
+            screen,
+            (240, max(0, 240 - 2 * p), 0),
+            pygame.Rect(2 * line_length + 203, 2 * line_length - 3 - p * int(line_length / 101 + 1), 45, int(line_length / 101) + 1),
+        )
 
 
 teststart = time.time()
@@ -203,14 +205,14 @@ while running:
         # print(texts[(current_index % len(texts))])
         return current_index % len(texts)
 
-    if rotation_step == 0:
+    if rotation_step == 0:  # or rotation_step != 0:
         index = current_result()
         text_surface = font2.render(texts[index], 100, (50, 40, 40))
         text_width = text_surface.get_width()
         text_height = text_surface.get_height()
-        pygame.draw.rect(screen, (20, 20, 20), pygame.Rect(245 - text_width, 25, text_width + 30, text_height + 30))
-        pygame.draw.rect(screen, (20, 160, 20), pygame.Rect(250 - text_width, 30, text_width + 20, text_height + 20))
-        screen.blit(text_surface, (260 - text_width, 36))
+        pygame.draw.rect(screen, (20, 20, 20), pygame.Rect(line_length - text_width - 5, 25, text_width + 30, text_height + 30))
+        pygame.draw.rect(screen, colors[index], pygame.Rect(line_length - text_width, 30, text_width + 20, text_height + 20))
+        screen.blit(text_surface, (line_length + 10 - text_width, 36))
 
     draw_wheel(current_degree)
     draw_power(added_power)
@@ -252,7 +254,6 @@ while running:
 
     if rotation_step > 0:
         turn_wheel()
-
 
 # Quit Pygame
 pygame.quit()
