@@ -82,7 +82,7 @@ def calculate_stop_time(rotation_step_0, rotation_tick):
 
 def roll_wheel(power_added):
     global rotation_step
-    power_added = power_added - 40 + random.random() * power_added / 2.5
+    power_added = power_added - 0.40 * power_added + random.random() * power_added / 2.5
     rotation_step = power_added / 100
     if power_added > 0:
         global wheel_moving
@@ -121,31 +121,42 @@ while running:
     for event in pygame.event.get():
         if event.type == pygame.QUIT:
             running = False
-        elif event.type == pygame.KEYUP:
-            key = pygame.key.name(event.key).lower()
+        elif event.type == pygame.KEYDOWN:
             if event.key == pygame.K_ESCAPE:
                 restarting_loop = False
                 running = False
-            if event.key == pygame.K_F5:
+            elif event.key == pygame.K_F5:
                 print("restart")
-            if event.key == pygame.K_SPACE:
+            elif event.key == pygame.K_SPACE and not wheel_moving:
+                print("powering up ")
+                added_power = max(added_power, 15)  # Ensure a minimum value
+        elif event.type == pygame.KEYUP:
+            if event.key == pygame.K_SPACE and not wheel_moving:
                 print("release ", added_power)
                 if added_power > 0:
                     roll_wheel(added_power)
                     added_power = 0
-        elif event.type == pygame.K_DOWN:
-            key = pygame.key.name(event.key).lower()
-            if event.key == pygame.K_SPACE:
-                print("powering up ")
-                added_power = min(added_power, 100)
-        else:
-            keys = pygame.key.get_pressed()
-            if keys[pygame.K_SPACE]:
-                added_power += 5
-                added_power = max(added_power, 25)
-                added_power = min(120, added_power)
-                draw_power(added_power)
-                # print(added_power)
+        elif event.type == pygame.MOUSEBUTTONUP:
+            # Handle mouse button release
+            if not wheel_moving and added_power >= 15:
+                roll_wheel(added_power)
+                added_power = 0
+
+    # Continuous checks outside of event handling
+    keys = pygame.key.get_pressed()
+    if keys[pygame.K_SPACE] and not wheel_moving:
+        added_power += 0.7
+        added_power = min(line_length / 2, added_power)  # Limit max power
+        draw_power(added_power)
+
+    if pygame.mouse.get_pressed()[0] and not wheel_moving:
+        added_power += 0.7
+        added_power = max(added_power, 15)
+        added_power = min(line_length / 2, added_power)
+        draw_power(added_power)
+    elif pygame.mouse.get_pressed()[2] and wheel_moving:
+        if rotation_step > 0.3:
+            rotation_step *= 0.998
 
     screen.fill(bg_color)
 
