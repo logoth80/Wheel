@@ -56,6 +56,7 @@ click_sound = pygame.mixer.Sound("click.mp3")
 font_wheel = pygame.font.SysFont("Book Antiqua", int(24 * line_length / 280))  # None uses the default system font
 # font_wheel.bold = True
 font_result = pygame.font.SysFont("Georgia", 36)
+font_fps = pygame.font.SysFont("Arial", 16)
 added_power = 0
 
 
@@ -92,16 +93,21 @@ def draw_power(power):
         )
 
 
-# teststart = time.time()
-# fpstest = 0
-# Main game loop
+teststart = time.time()
+fpstest = 0
+fps = 0
 
 running = True
+# main loop
 while running:
-    # fpstest += 1
-    # if fpstest % 1000 == 0:
-    #     print(1000 / (time.time() - teststart), " fps")
-    #     teststart = time.time()
+    fpstest += 1
+    if fpstest % 1000 == 0:
+        fps = 1000 / (time.time() - teststart)
+        teststart = time.time()
+
+    screen.fill(bg_color)
+    text_surface = font_fps.render("FPS: " + str(int(fps)), True, black)
+    screen.blit(text_surface, (width - 66, height - 21))
 
     for event in pygame.event.get():
         if event.type == pygame.QUIT:
@@ -127,11 +133,10 @@ while running:
                 roll_wheel(added_power)
                 added_power = 0
 
-    # Continuous checks outside of event handling
     keys = pygame.key.get_pressed()
     if keys[pygame.K_SPACE] and not wheel_moving:
         added_power += 0.7
-        added_power = min(line_length / 2, added_power)  # Limit max power
+        added_power = min(line_length / 2, added_power)
         draw_power(added_power)
 
     if pygame.mouse.get_pressed()[0] and not wheel_moving:
@@ -143,10 +148,7 @@ while running:
         if wheel_rotation_step > 0.3:
             wheel_rotation_step *= 0.998
 
-    screen.fill(bg_color)
-
     def draw_wheel(degree):
-        # Draw pies * triangles
         current_angle = degree
         for i in range(pies):
             end_x = center_x + line_length * math.cos(math.radians(current_angle))
@@ -155,11 +157,10 @@ while running:
             third_vertex_x = center_x + line_length * math.cos(math.radians(current_angle + angle_of_pie))
             third_vertex_y = center_y - line_length * math.sin(math.radians(current_angle + angle_of_pie))
 
-            # Draw and fill the triangle
-            gfxdraw.aapolygon(screen, [(center_x, center_y), (int(end_x), int(end_y)), (int(third_vertex_x), int(third_vertex_y))], colors[i % len(colors)])
             temp_color = colors[i % len(colors)]
 
             pygame.draw.polygon(screen, temp_color, [(center_x, center_y), (end_x, end_y), (third_vertex_x, third_vertex_y)], width=0)
+
             if wheel_rotation_step == 0:
                 gfxdraw.aapolygon(screen, [(center_x, center_y), (end_x, end_y), (third_vertex_x, third_vertex_y)], temp_color)
 
@@ -198,7 +199,6 @@ while running:
 
     def current_result():
         current_index = int(((-90 - current_degree) % 360) / (360 / pies))
-        # print(texts[(current_index % len(texts))])
         return current_index % len(texts)
 
     if wheel_rotation_step == 0 or wheel_rotation_step != 0:
@@ -228,7 +228,6 @@ while running:
         0,
     )
 
-    # Update the display
     pygame.display.flip()
 
     def turn_wheel():
@@ -260,5 +259,4 @@ while running:
     if wheel_rotation_step > 0:
         turn_wheel()
 
-# Quit Pygame
 pygame.quit()
