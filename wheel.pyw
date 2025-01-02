@@ -42,10 +42,10 @@ center_x, center_y = width // 2, height // 2
 
 pies = 24
 # Angle between each triangle in degrees
-angle_step = 360 / pies
+angle_of_pie = 360 / pies
 current_degree = -1
 rotation_tick = 0.004
-rotation_step = 0
+wheel_rotation_step = 0
 last_tick_time = time.time()
 last_rest = 0
 play_sound_step = 360 / (3 * pies)
@@ -53,8 +53,9 @@ next_sound_angle = -play_sound_step
 click_sound = pygame.mixer.Sound("click.mp3")
 
 # Set up the font
-font = pygame.font.SysFont("Book Antiqua", int(24 * line_length / 280))  # None uses the default system font
-font2 = pygame.font.SysFont("Georgia", 36)
+font_wheel = pygame.font.SysFont("Book Antiqua", int(24 * line_length / 280))  # None uses the default system font
+# font_wheel.bold = True
+font_result = pygame.font.SysFont("Georgia", 36)
 added_power = 0
 
 
@@ -81,30 +82,37 @@ def calculate_stop_time(rotation_step_0, rotation_tick):
 
 
 def roll_wheel(power_added):
-    global rotation_step
+    global wheel_rotation_step
     power_added = power_added - 0.40 * power_added + random.random() * power_added / 2.5
-    rotation_step = power_added / 100
+    wheel_rotation_step = power_added / 100
     if power_added > 0:
         global wheel_moving
         wheel_moving = True
 
-    time_to_stop = calculate_stop_time(rotation_step, rotation_tick)
+    time_to_stop = calculate_stop_time(wheel_rotation_step, rotation_tick)
     print(f"Speed: {power_added}. Time to stop: {time_to_stop:.2f} seconds")
 
 
 def sound_click():
-    click_sound.set_volume(0.3 + rotation_step)
+    click_sound.set_volume(0.3 + wheel_rotation_step)
     click_sound.play()
 
 
 def draw_power(power):
-    for p in range(int(power)):
-        pygame.draw.rect(screen, (25, 200, 0), pygame.Rect(2 * line_length + 200, 2 * line_length - p * int(line_length / 101 + 1) - 6, 51, 8))
-    for p in range(int(power)):
+    x = 180
+    if power > 0:
+        multi = (line_length * 2) / 120
+    else:
+        multi = 0
+    for p in range(int(power * multi)):
+        pygame.draw.rect(
+            screen, (25, 200, 0), pygame.Rect(2 * line_length + x, center_y + line_length - p * int(line_length / (line_length * multi) + 1) - 6, 51, 8)
+        )
+    for p in range(int(power * multi)):
         pygame.draw.rect(
             screen,
-            (240, max(0, 240 - 2 * p), 0),
-            pygame.Rect(2 * line_length + 203, 2 * line_length - 3 - p * int(line_length / 101 + 1), 45, int(line_length / 101) + 1),
+            (255, max(0, int((240 - 0.4 * p) / 15)) * 15, 0),
+            pygame.Rect(2 * line_length + x + 3, center_y + line_length - 3 - p * int(line_length / (line_length * multi) + 1), 45, int(line_length / 101) + 1),
         )
 
 
@@ -155,8 +163,8 @@ while running:
         added_power = min(line_length / 2, added_power)
         draw_power(added_power)
     elif pygame.mouse.get_pressed()[2] and wheel_moving:
-        if rotation_step > 0.3:
-            rotation_step *= 0.998
+        if wheel_rotation_step > 0.3:
+            wheel_rotation_step *= 0.998
 
     screen.fill(bg_color)
 
@@ -167,32 +175,30 @@ while running:
             end_x = center_x + line_length * math.cos(math.radians(current_angle))
             end_y = center_y - line_length * math.sin(math.radians(current_angle))
 
-            third_vertex_x = center_x + line_length * math.cos(math.radians(current_angle + angle_step))
-            third_vertex_y = center_y - line_length * math.sin(math.radians(current_angle + angle_step))
+            third_vertex_x = center_x + line_length * math.cos(math.radians(current_angle + angle_of_pie))
+            third_vertex_y = center_y - line_length * math.sin(math.radians(current_angle + angle_of_pie))
 
             # Draw and fill the triangle
             # gfxdraw.aapolygon(screen, [(center_x, center_y), (int(end_x), int(end_y)), (int(third_vertex_x), int(third_vertex_y))], colors[i % len(colors)])
-            pygame.draw.polygon(
-                screen,
-                colors[i % len(colors)],
-                [
-                    (center_x, center_y),
-                    (int(end_x), int(end_y)),
-                    (int(third_vertex_x), int(third_vertex_y)),
-                ],
-                width=0,
-            )
-            if rotation_step == 0:
-                gfxdraw.aapolygon(screen, [(center_x, center_y), (int(end_x), int(end_y)), (int(third_vertex_x), int(third_vertex_y))], colors[i % len(colors)])
+            temp_color = colors[i % len(colors)]
+
+            pygame.draw.polygon(screen, temp_color, [(center_x, center_y), (end_x, end_y), (third_vertex_x, third_vertex_y)], width=0)
+            if wheel_rotation_step == 0:
+                gfxdraw.aapolygon(screen, [(center_x, center_y), (end_x, end_y), (third_vertex_x, third_vertex_y)], temp_color)
 
             gfxdraw.aacircle(screen, center_x, center_y, line_length + 1, gold)
             pygame.draw.circle(screen, gold, (center_x, center_y), radius=line_length + 1, width=7)
             gfxdraw.aacircle(screen, center_x, center_y, line_length - 6, gold)
 
             # Calculate text position for each triangle
-            text_angle = current_angle + angle_step / 2
+            text_angle = current_angle + angle_of_pie / 2
             # Render text into a surface
-            text_surface = font.render(texts[i % len(texts)], True, black)
+            temp_text = texts[i % len(texts)]
+            if temp_color[0] + temp_color[1] + temp_color[2] >= 340:
+                text_surface = font_wheel.render(temp_text, 1, black)
+            else:
+                text_surface = font_wheel.render(temp_text, 1, (255, 241, 118))
+
             offset = int(0.5 * text_surface.get_width()) + 20
             t1_x = center_x + ((line_length - offset) * math.cos(math.radians(text_angle)))  # Adjusted distance
             t1_y = center_y - ((line_length - offset) * math.sin(math.radians(text_angle)))
@@ -204,7 +210,7 @@ while running:
             rotated_rect = rotated_text_surface.get_rect(center=(t1_x, t1_y))
             screen.blit(rotated_text_surface, rotated_rect)
 
-            current_angle += angle_step
+            current_angle += angle_of_pie
 
         for i in range(3 * pies):  # spokes
             degree_1 = i * (360 / (3 * pies)) + current_degree
@@ -218,14 +224,22 @@ while running:
         # print(texts[(current_index % len(texts))])
         return current_index % len(texts)
 
-    if rotation_step == 0:  # or rotation_step != 0:
+    if wheel_rotation_step == 0 or wheel_rotation_step != 0:
         index = current_result()
-        text_surface = font2.render(texts[index], 100, (50, 40, 40))
+        temp_color = colors[index % len(colors)]
+        if temp_color[0] + temp_color[1] + temp_color[2] < 330:
+            temp_color_text = (255, 241, 118)
+        else:
+            temp_color_text = black
+        text_surface = font_result.render(texts[index], 100, temp_color_text)
         text_width = text_surface.get_width()
         text_height = text_surface.get_height()
-        pygame.draw.rect(screen, (20, 20, 20), pygame.Rect(line_length - text_width - 5, 25, text_width + 30, text_height + 30))
-        pygame.draw.rect(screen, colors[index], pygame.Rect(line_length - text_width, 30, text_width + 20, text_height + 20))
-        screen.blit(text_surface, (line_length + 10 - text_width, 36))
+        offset = line_length // 2 - text_width // 2
+        x1 = offset
+        y1 = 20
+        pygame.draw.rect(screen, (20, 20, 20), pygame.Rect(x1, y1, text_width + 23, text_height + 26))
+        pygame.draw.rect(screen, colors[index], pygame.Rect(x1 + 3, y1 + 3, text_width + 17, text_height + 20))
+        screen.blit(text_surface, (x1 + 13, y1 + 13))
 
     draw_wheel(current_degree)
     draw_power(added_power)
@@ -241,23 +255,23 @@ while running:
     pygame.display.flip()
 
     def turn_wheel():
-        global last_tick_time, current_degree, next_sound_angle, rotation_step, wheel_moving
+        global last_tick_time, current_degree, next_sound_angle, wheel_rotation_step, wheel_moving
 
         if time.time() > last_tick_time + rotation_tick:
             last_tick_time = time.time()
-            current_degree -= rotation_step
+            current_degree -= wheel_rotation_step
 
-            if rotation_step < 0.02:
-                rotation_step = 0
+            if wheel_rotation_step < 0.02:
+                wheel_rotation_step = 0
                 wheel_moving = False
-            elif rotation_step < 0.08:
-                rotation_step = rotation_step * 0.996
-            elif rotation_step < 0.2:
-                rotation_step = rotation_step * 0.9975
-            elif rotation_step < 0.5:
-                rotation_step = rotation_step * 0.9985
+            elif wheel_rotation_step < 0.08:
+                wheel_rotation_step = wheel_rotation_step * 0.996
+            elif wheel_rotation_step < 0.2:
+                wheel_rotation_step = wheel_rotation_step * 0.9975
+            elif wheel_rotation_step < 0.5:
+                wheel_rotation_step = wheel_rotation_step * 0.9985
             else:
-                rotation_step = rotation_step * 0.999
+                wheel_rotation_step = wheel_rotation_step * 0.999
             if current_degree < next_sound_angle:
                 sound_click()
                 next_sound_angle -= play_sound_step
@@ -266,7 +280,7 @@ while running:
                 current_degree += 360
                 next_sound_angle += 360
 
-    if rotation_step > 0:
+    if wheel_rotation_step > 0:
         turn_wheel()
 
 # Quit Pygame
