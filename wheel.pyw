@@ -23,19 +23,19 @@ silver = (140, 140, 140)
 bg_color = (146, 43, 33)
 colors = [
     (198, 40, 40),  # Red
-    (51, 153, 0),  # Green
     (118, 68, 138),
-    (0, 255, 125),
+    (130, 224, 170),
+    (51, 153, 0),  # Green
     (40, 53, 147),  # Blue
     (255, 125, 0),
-    (255, 255, 0),  # Yellow
     (0, 255, 255),  # Cyan
+    (241, 196, 15),  # Yellow
     (0, 125, 255),
     (175, 122, 197),  # Magenta
     (238, 238, 238),
     (60, 60, 60),
 ]
-texts = ["BANKRUT", "2500", "200", "300", "500", "WYCIECZKA", "750", "1000", "1500", "Niespodzianka", "100", "5000"]
+texts = ["BANKRUT", "2500", "200", "300", "500", "Wycieczka", "750", "1000", "1500", "Niespodzianka", "100", "5000"]
 
 # Starting point of the triangles
 center_x, center_y = width // 2, height // 2
@@ -48,7 +48,7 @@ rotation_tick = 0.004
 wheel_rotation_step = 0
 last_tick_time = time.time()
 last_rest = 0
-play_sound_step = 360 / (3 * pies)
+play_sound_step = 360 / (3 * pies)  # 3 spokes per pie 0, 1/3, 2/3, (4th in next)
 next_sound_angle = -play_sound_step
 click_sound = pygame.mixer.Sound("click.mp3")
 
@@ -59,28 +59,6 @@ font_result = pygame.font.SysFont("Georgia", 36)
 added_power = 0
 
 
-def calculate_stop_time(rotation_step_0, rotation_tick):
-    total_time = 0
-    current_step = rotation_step_0
-
-    while current_step >= 0.02:
-        if current_step < 0.08:
-            decay_factor = 0.9965
-        elif current_step < 0.2:
-            decay_factor = 0.9975
-        elif current_step < 0.5:
-            decay_factor = 0.9985
-        else:
-            decay_factor = 0.999
-
-        # Calculate time for this step
-        steps_to_next_threshold = math.ceil(math.log(0.02 / current_step) / math.log(decay_factor))
-        total_time += steps_to_next_threshold * rotation_tick
-        current_step *= decay_factor**steps_to_next_threshold  # Decay to threshold
-
-    return total_time
-
-
 def roll_wheel(power_added):
     global wheel_rotation_step
     power_added = power_added - 0.40 * power_added + random.random() * power_added / 2.5
@@ -88,9 +66,6 @@ def roll_wheel(power_added):
     if power_added > 0:
         global wheel_moving
         wheel_moving = True
-
-    time_to_stop = calculate_stop_time(wheel_rotation_step, rotation_tick)
-    print(f"Speed: {power_added}. Time to stop: {time_to_stop:.2f} seconds")
 
 
 def sound_click():
@@ -100,31 +75,33 @@ def sound_click():
 
 def draw_power(power):
     x = 180
-    if power > 0:
-        multi = (line_length * 2) / 120
-    else:
-        multi = 0
+    multi = (line_length * 2) / 120
+    prop = int(line_length / (line_length * multi) + 1)
     for p in range(int(power * multi)):
-        pygame.draw.rect(
-            screen, (25, 200, 0), pygame.Rect(2 * line_length + x, center_y + line_length - p * int(line_length / (line_length * multi) + 1) - 6, 51, 8)
-        )
-    for p in range(int(power * multi)):
+        pygame.draw.rect(screen, (25, 200, 0), pygame.Rect(2 * line_length + x, center_y + line_length - p * prop - 6, 50, 8))
+    for p in range(0, int(power * multi), 20):
         pygame.draw.rect(
             screen,
-            (255, max(0, int((240 - 0.4 * p) / 15)) * 15, 0),
-            pygame.Rect(2 * line_length + x + 3, center_y + line_length - 3 - p * int(line_length / (line_length * multi) + 1), 45, int(line_length / 101) + 1),
+            (240, max(0, int((240 - 0.4 * p) / 10)) * 10, 0),
+            pygame.Rect(2 * line_length + x + 2, center_y + line_length - 3 - p * prop - 19, 46, int(line_length / 100) + 18),
+        )
+        pygame.draw.rect(
+            screen,
+            (200, max(0, int((200 - 0.4 * p) / 10)) * 10, 0),
+            pygame.Rect(2 * line_length + x + 2, center_y + line_length - 1 - p * prop - 17, 44, int(line_length / 100) + 16),
         )
 
 
-teststart = time.time()
-fpstest = 0
+# teststart = time.time()
+# fpstest = 0
 # Main game loop
+
 running = True
 while running:
-    fpstest += 1
-    if fpstest % 1000 == 0:
-        print(1000 / (time.time() - teststart), " fps")
-        teststart = time.time()
+    # fpstest += 1
+    # if fpstest % 1000 == 0:
+    #     print(1000 / (time.time() - teststart), " fps")
+    #     teststart = time.time()
 
     for event in pygame.event.get():
         if event.type == pygame.QUIT:
@@ -179,7 +156,7 @@ while running:
             third_vertex_y = center_y - line_length * math.sin(math.radians(current_angle + angle_of_pie))
 
             # Draw and fill the triangle
-            # gfxdraw.aapolygon(screen, [(center_x, center_y), (int(end_x), int(end_y)), (int(third_vertex_x), int(third_vertex_y))], colors[i % len(colors)])
+            gfxdraw.aapolygon(screen, [(center_x, center_y), (int(end_x), int(end_y)), (int(third_vertex_x), int(third_vertex_y))], colors[i % len(colors)])
             temp_color = colors[i % len(colors)]
 
             pygame.draw.polygon(screen, temp_color, [(center_x, center_y), (end_x, end_y), (third_vertex_x, third_vertex_y)], width=0)
